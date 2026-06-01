@@ -121,6 +121,8 @@ const COPY = {
       `${label}: kahden parhaan ero on ${diff} l/min.`,
     exportPdf: "Vie täytetty PDF",
     exportCalendar: "Kalenterimuistutukset",
+    exportBackup: "Varmuuskopio (JSON)",
+    backupReady: "Varmuuskopio ladattu",
     enableNotifications: "Salli appimuistutus",
     export: "Vienti",
     overview: "Yhteenveto",
@@ -200,6 +202,8 @@ const COPY = {
       `${label}: the two best blows differ by ${diff} l/min.`,
     exportPdf: "Export filled PDF",
     exportCalendar: "Calendar reminders",
+    exportBackup: "Backup (JSON)",
+    backupReady: "Backup downloaded",
     enableNotifications: "Allow app reminder",
     export: "Export",
     overview: "Summary",
@@ -482,6 +486,7 @@ function render() {
       <section class="actions-band" aria-label="${c.export}">
         <button class="primary-action" data-action="export-pdf">${c.exportPdf}</button>
         <button data-action="export-calendar">${c.exportCalendar}</button>
+        <button data-action="export-backup">${c.exportBackup}</button>
         <button data-action="enable-notifications">${c.enableNotifications}</button>
       </section>
 
@@ -549,6 +554,7 @@ function render() {
 
   app.querySelector<HTMLButtonElement>("[data-action='export-pdf']")?.addEventListener("click", exportPdf);
   app.querySelector<HTMLButtonElement>("[data-action='export-calendar']")?.addEventListener("click", exportCalendar);
+  app.querySelector<HTMLButtonElement>("[data-action='export-backup']")?.addEventListener("click", exportBackup);
   app
     .querySelector<HTMLButtonElement>("[data-action='enable-notifications']")
     ?.addEventListener("click", enableNotifications);
@@ -766,6 +772,16 @@ function exportCalendar() {
   ].join("\r\n");
   downloadBlob(new Blob([calendar], { type: "text/calendar;charset=utf-8" }), "PEF-muistutukset.ics");
   saveState(copy().calendarReady);
+  render();
+}
+
+function exportBackup() {
+  const payload = JSON.stringify(state, null, 2);
+  downloadBlob(
+    new Blob([payload], { type: "application/json;charset=utf-8" }),
+    `PEF-seuranta-varmuuskopio-${compactDateTime(new Date())}.json`
+  );
+  saveState(copy().backupReady);
   render();
 }
 
