@@ -783,10 +783,26 @@ async function exportPdf() {
   new Uint8Array(pdfBuffer).set(bytes);
   downloadBlob(
     new Blob([pdfBuffer], { type: "application/pdf" }),
-    `PEF-taulukko-${state.settings.startDate}.pdf`
+    pdfFilename()
   );
   saveState(copy().pdfReady);
   render();
+}
+
+function pdfFilename() {
+  const patient = sanitizeFilenamePart(state.settings.patientName);
+  return patient
+    ? `PEF-taulukko-${patient}-${state.settings.startDate}.pdf`
+    : `PEF-taulukko-${state.settings.startDate}.pdf`;
+}
+
+function sanitizeFilenamePart(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
 }
 
 function parseSymptomValues(value: string) {

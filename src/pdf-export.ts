@@ -41,6 +41,7 @@ export async function createPefPdfBytes(state: PdfAppState, template: ArrayBuffe
   const pdf = await PDFDocument.create();
   const [page] = await pdf.copyPages(source, [1]);
   pdf.addPage(page);
+  setPdfMetadata(pdf, state);
 
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const { height } = page.getSize();
@@ -88,6 +89,15 @@ export async function createPefPdfBytes(state: PdfAppState, template: ArrayBuffe
   drawGraph(page, state, topY, regular, blue);
 
   return pdf.save();
+}
+
+function setPdfMetadata(pdf: PDFDocument, state: PdfAppState) {
+  const periodEnd = state.entries.at(-1)?.date ?? state.settings.startDate;
+  pdf.setTitle("PEF-taulukko");
+  pdf.setSubject(`${state.settings.startDate}–${periodEnd}`);
+  if (state.settings.patientName.trim()) pdf.setAuthor(state.settings.patientName.trim());
+  pdf.setCreator("PEF-seuranta / puhallus.com");
+  pdf.setCreationDate(new Date());
 }
 
 function toNumbers(values: string[]) {
