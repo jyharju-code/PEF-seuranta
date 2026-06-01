@@ -6,4 +6,4 @@ The app is designed as a static PWA so it can be hosted on GitHub Pages and late
 
 Live app:
 
-https://jyharju-code.github.io/PEF-seuranta/
+https://puhallus.com/
