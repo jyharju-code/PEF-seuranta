@@ -493,14 +493,7 @@ function drawGraph(
 
   if (!values.length) return;
 
-  const maxData = Math.max(...values);
-  const minData = Math.min(...values);
-  let minScale = Math.max(0, Math.floor(minData / 50) * 50 - 50);
-  let maxScale = minScale + 400;
-  if (maxData > maxScale) {
-    maxScale = Math.ceil(maxData / 50) * 50 + 50;
-    minScale = Math.max(0, maxScale - 400);
-  }
+  const { minScale, maxScale } = chooseGraphScale(values);
 
   const xLeft = 117.5;
   const pairWidth = 47.0;
@@ -532,6 +525,20 @@ function drawGraph(
       });
     });
   });
+}
+
+function chooseGraphScale(values: number[]) {
+  const minData = Math.min(...values);
+  const maxData = Math.max(...values);
+  let minScale = Math.max(0, Math.floor(minData / 100) * 100);
+  let maxScale = Math.ceil(maxData / 100) * 100;
+
+  if (maxScale === minScale) {
+    minScale = Math.max(0, minScale - 100);
+    maxScale = minScale + 200;
+  }
+
+  return { minScale, maxScale };
 }
 
 function drawText(
