@@ -119,6 +119,7 @@ const COPY = {
     qualityOk: "Kahden parhaan puhalluksen ero on kunnossa, kun arvoja on vähintään kaksi.",
     qualityWarning: (label: string, diff: number) =>
       `${label}: kahden parhaan ero on ${diff} l/min.`,
+    pefValueRange: (label: string) => `${label}: käytä arvoa 50–900 l/min.`,
     exportPdf: "Vie täytetty PDF",
     exportCalendar: "Kalenterimuistutukset",
     exportBackup: "Varmuuskopio (JSON)",
@@ -203,6 +204,7 @@ const COPY = {
     qualityOk: "The two best blows are within range once at least two values are entered.",
     qualityWarning: (label: string, diff: number) =>
       `${label}: the two best blows differ by ${diff} l/min.`,
+    pefValueRange: (label: string) => `${label}: use a value from 50 to 900 l/min.`,
     exportPdf: "Export filled PDF",
     exportCalendar: "Calendar reminders",
     exportBackup: "Backup (JSON)",
@@ -344,7 +346,8 @@ function render() {
   const activeSession = activeDay[state.activeSession];
   const warnings = [
     qualityWarning(activeSession.before, c.beforeMedication),
-    qualityWarning(activeSession.after, c.afterMedication)
+    qualityWarning(activeSession.after, c.afterMedication),
+    ...rangeWarnings(activeSession)
   ].filter(Boolean);
   const diurnalSummary = summarizeDiurnalVariation(state.entries);
   const bronchodilatorSummary = summarizeBronchodilatorResponses(state.entries);
@@ -723,6 +726,31 @@ function qualityWarning(values: string[], label: string) {
   const diff = bestTwoDifference(values);
   if (diff === null || diff <= 20) return "";
   return copy().qualityWarning(label, diff);
+}
+
+function rangeWarnings(session: BlowSession) {
+  const c = copy();
+  return [
+    hasOutOfRangePefValue(session.before) ? c.pefValueRange(c.beforeMedication) : "",
+    hasOutOfRangePefValue(session.after) ? c.pefValueRange(c.afterMedication) : "",
+    hasOutOfRangeSymptomValue(session.symptoms) ? c.pefValueRange(c.symptomBlows) : ""
+  ];
+}
+
+function hasOutOfRangePefValue(values: string[]) {
+  return values.some((value) => value.trim() !== "" && !isPefValueInRange(value));
+}
+
+function hasOutOfRangeSymptomValue(value: string) {
+  return value
+    .split(/[,\s;]+/)
+    .filter(Boolean)
+    .some((part) => !isPefValueInRange(part));
+}
+
+function isPefValueInRange(value: string) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 50 && number <= 900;
 }
 
 function displayBest(value: number | null) {
