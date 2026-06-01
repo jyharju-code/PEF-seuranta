@@ -50,12 +50,21 @@ interface AppState {
   status: string;
 }
 
+interface BackupSnapshot {
+  savedAt: string;
+  reason: "auto" | "restore";
+  state: AppState;
+}
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
 const STORAGE_KEY = "pef-seuranta:v1";
+const SNAPSHOT_STORAGE_KEY = "pef-seuranta:snapshots:v1";
+const SNAPSHOT_MAX_COUNT = 8;
+const SNAPSHOT_MIN_INTERVAL_MS = 15 * 60 * 1000;
 const SPONSOR_URL = "https://github.com/sponsors/jyharju-code";
 let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
 
@@ -126,7 +135,26 @@ const COPY = {
     restoreBackup: "Palauta varmuuskopio",
     backupReady: "Varmuuskopio ladattu",
     backupRestored: "Varmuuskopio palautettu",
+    internalBackupRestored: "Palautettu sisäisestä varmuuskopiosta",
     backupInvalid: "Varmuuskopio ei ole kelvollinen",
+    backupTitle: "Varmuusturva",
+    backupStatus: (snapshots: number) =>
+      snapshots > 0
+        ? `Automaattisia sisäisiä varmuuskopioita: ${snapshots}.`
+        : "Automaattinen sisäinen varmuuskopio syntyy, kun alat kirjata arvoja.",
+    backupReminder:
+      "Tärkein pysyvä tallenne on PDF tai tiedostoksi tallennettu JSON-varmuuskopio.",
+    backupIphone:
+      "iPhonessa selain ei saa tallentaa tiedostoa automaattisesti iCloudiin. Napauta varmuuskopiota ja valitse Jaa-valikosta Tallenna tiedostoihin.",
+    backupAndroid:
+      "Androidissa varmuuskopio tallentuu yleensä Lataukset-kansioon tai sen voi jakaa Driveen/Filesiin selaimen valikosta.",
+    backupShare: "Tallenna / jaa varmuuskopio",
+    storagePersist: "Suojaa selaimen tallennus",
+    storagePersisted: "Selain lupasi säilyttää paikallisen tallennuksen paremmin",
+    storagePersistUnavailable:
+      "Tämä selain ei tue erillistä tallennussuojan pyyntöä. Käytä tiedostovarmuuskopiota.",
+    storagePersistDenied:
+      "Selain ei myöntänyt erillistä tallennussuojaa. Käytä tiedostovarmuuskopiota.",
     enableNotifications: "Salli appimuistutus",
     export: "Vienti",
     overview: "Yhteenveto",
@@ -211,7 +239,26 @@ const COPY = {
     restoreBackup: "Restore backup",
     backupReady: "Backup downloaded",
     backupRestored: "Backup restored",
+    internalBackupRestored: "Restored from an internal backup",
     backupInvalid: "The backup file is not valid",
+    backupTitle: "Backup safety",
+    backupStatus: (snapshots: number) =>
+      snapshots > 0
+        ? `Automatic internal backups: ${snapshots}.`
+        : "An automatic internal backup is created after you start entering values.",
+    backupReminder:
+      "The durable record is the exported PDF or a JSON backup saved as a file.",
+    backupIphone:
+      "On iPhone, a browser cannot silently save a file to iCloud. Tap backup and use the Share sheet to Save to Files.",
+    backupAndroid:
+      "On Android, the backup usually goes to Downloads or can be shared to Drive/Files from the browser flow.",
+    backupShare: "Save / share backup",
+    storagePersist: "Protect browser storage",
+    storagePersisted: "The browser agreed to keep local storage more persistent",
+    storagePersistUnavailable:
+      "This browser does not support a separate storage-protection request. Use a file backup.",
+    storagePersistDenied:
+      "The browser did not grant separate storage protection. Use a file backup.",
     enableNotifications: "Allow app reminder",
     export: "Export",
     overview: "Summary",
@@ -285,11 +332,13 @@ window.addEventListener("beforeinstallprompt", (event) => {
 render();
 registerServiceWorker();
 scheduleVisibleAppReminder();
+requestPersistentStorageQuietly();
 
 function loadState(): AppState {
   const fallback = defaultState();
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) return fallback;
+  const snapshotState = latestSnapshotState();
+  if (!stored) return snapshotState ?? fallback;
 
   try {
     const parsed = JSON.parse(stored) as Partial<AppState>;
@@ -304,7 +353,7 @@ function loadState(): AppState {
       activeSession: parsed.activeSession ?? "morning"
     };
   } catch {
-    return fallback;
+    return snapshotState ?? fallback;
   }
 }
 
@@ -319,6 +368,7 @@ function copy() {
 function saveState(status = copy().saved) {
   state.status = status;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  saveInternalSnapshot("auto");
 }
 
 function buildEntries(startDate: string, days: number, existing: DayEntry[]): DayEntry[] {
@@ -351,6 +401,7 @@ function render() {
   ].filter(Boolean);
   const diurnalSummary = summarizeDiurnalVariation(state.entries);
   const bronchodilatorSummary = summarizeBronchodilatorResponses(state.entries);
+  const snapshotCount = loadSnapshots().length;
 
   app.innerHTML = `
     <header class="app-header">
@@ -400,6 +451,16 @@ function render() {
           <article>
             <h3>${c.privacyTitle}</h3>
             <p>${c.privacy}</p>
+          </article>
+          <article class="backup-card">
+            <h3>${c.backupTitle}</h3>
+            <p>${c.backupStatus(snapshotCount)}</p>
+            <p>${state.settings.device === "android" ? c.backupAndroid : c.backupIphone}</p>
+            <p>${c.backupReminder}</p>
+            <div class="backup-actions">
+              <button class="secondary-action" data-action="export-backup">${c.backupShare}</button>
+              <button class="secondary-action" data-action="persist-storage">${c.storagePersist}</button>
+            </div>
           </article>
         </div>
         <a class="support-link" href="${SPONSOR_URL}" target="_blank" rel="noopener">${c.support}</a>
@@ -565,7 +626,10 @@ function render() {
 
   app.querySelector<HTMLButtonElement>("[data-action='export-pdf']")?.addEventListener("click", exportPdf);
   app.querySelector<HTMLButtonElement>("[data-action='export-calendar']")?.addEventListener("click", exportCalendar);
-  app.querySelector<HTMLButtonElement>("[data-action='export-backup']")?.addEventListener("click", exportBackup);
+  app
+    .querySelectorAll<HTMLButtonElement>("[data-action='export-backup']")
+    .forEach((button) => button.addEventListener("click", exportBackup));
+  app.querySelector<HTMLButtonElement>("[data-action='persist-storage']")?.addEventListener("click", requestPersistentStorage);
   app.querySelector<HTMLButtonElement>("[data-action='restore-backup']")?.addEventListener("click", () => {
     app.querySelector<HTMLInputElement>("[data-backup-file]")?.click();
   });
@@ -831,14 +895,35 @@ function exportCalendar() {
   render();
 }
 
-function exportBackup() {
+async function exportBackup() {
+  const filename = `PEF-seuranta-varmuuskopio-${compactDateTime(new Date())}.json`;
   const payload = JSON.stringify(state, null, 2);
-  downloadBlob(
-    new Blob([payload], { type: "application/json;charset=utf-8" }),
-    `PEF-seuranta-varmuuskopio-${compactDateTime(new Date())}.json`
-  );
-  saveState(copy().backupReady);
-  render();
+  const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+  const file = new File([blob], filename, { type: blob.type });
+  let completed = false;
+
+  if (canShareFile(file)) {
+    try {
+      await navigator.share({
+        title: copy().backupTitle,
+        text: state.settings.device === "android" ? copy().backupAndroid : copy().backupIphone,
+        files: [file]
+      });
+      completed = true;
+    } catch (error) {
+      if (isAbortError(error)) return;
+      downloadBlob(blob, filename);
+      completed = true;
+    }
+  } else {
+    downloadBlob(blob, filename);
+    completed = true;
+  }
+
+  if (completed) {
+    saveState(copy().backupReady);
+    render();
+  }
 }
 
 async function restoreBackup(event: Event) {
@@ -855,6 +940,7 @@ async function restoreBackup(event: Event) {
       render();
       return;
     }
+    saveInternalSnapshot("restore", true);
     state = restored;
     saveState(copy().backupRestored);
     render();
@@ -862,6 +948,106 @@ async function restoreBackup(event: Event) {
     saveState(copy().backupInvalid);
     render();
   }
+}
+
+function loadSnapshots(): BackupSnapshot[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SNAPSHOT_STORAGE_KEY) ?? "[]") as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(isBackupSnapshot)
+      .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+      .slice(0, SNAPSHOT_MAX_COUNT);
+  } catch {
+    return [];
+  }
+}
+
+function latestSnapshotState() {
+  const snapshot = loadSnapshots()[0];
+  if (!snapshot) return null;
+  return {
+    ...snapshot.state,
+    status: COPY[snapshot.state.settings.language].internalBackupRestored
+  };
+}
+
+function saveInternalSnapshot(reason: BackupSnapshot["reason"], force = false) {
+  if (!hasEnteredValues(state)) return;
+  const now = new Date();
+  const snapshots = loadSnapshots();
+  const latest = snapshots[0];
+  if (!force && latest) {
+    const latestTime = new Date(latest.savedAt).getTime();
+    if (Number.isFinite(latestTime) && now.getTime() - latestTime < SNAPSHOT_MIN_INTERVAL_MS) {
+      return;
+    }
+  }
+
+  const snapshot: BackupSnapshot = {
+    savedAt: now.toISOString(),
+    reason,
+    state: JSON.parse(JSON.stringify(state)) as AppState
+  };
+  localStorage.setItem(
+    SNAPSHOT_STORAGE_KEY,
+    JSON.stringify([snapshot, ...snapshots].slice(0, SNAPSHOT_MAX_COUNT))
+  );
+}
+
+function hasEnteredValues(value: AppState) {
+  return value.entries.some((entry) =>
+    ([entry.morning, entry.evening] as BlowSession[]).some(
+      (session) =>
+        session.time ||
+        session.afterTime ||
+        session.symptomTime ||
+        session.symptoms.trim() ||
+        session.before.some(Boolean) ||
+        session.after.some(Boolean)
+    )
+  );
+}
+
+function isBackupSnapshot(value: unknown): value is BackupSnapshot {
+  return (
+    isRecord(value) &&
+    isString(value.savedAt) &&
+    (value.reason === "auto" || value.reason === "restore") &&
+    validateBackupState(value.state) !== null
+  );
+}
+
+function canShareFile(file: File) {
+  return (
+    "share" in navigator &&
+    "canShare" in navigator &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [file] })
+  );
+}
+
+function isAbortError(error: unknown) {
+  return isRecord(error) && error.name === "AbortError";
+}
+
+async function requestPersistentStorage() {
+  if (!navigator.storage?.persist) {
+    saveState(copy().storagePersistUnavailable);
+    render();
+    return;
+  }
+
+  const persisted = await navigator.storage.persist();
+  saveState(persisted ? copy().storagePersisted : copy().storagePersistDenied);
+  render();
+}
+
+async function requestPersistentStorageQuietly() {
+  if (!navigator.storage?.persisted || !navigator.storage.persist) return;
+  const alreadyPersisted = await navigator.storage.persisted();
+  if (alreadyPersisted || state.settings.device !== "android") return;
+  await navigator.storage.persist();
 }
 
 function validateBackupState(value: unknown): AppState | null {
