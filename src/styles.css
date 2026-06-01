@@ -81,6 +81,29 @@ button:focus-visible {
   padding: 18px 0 22px;
 }
 
+.brand-heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.app-logo {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 68% 68%, rgba(219, 234, 254, 0.95) 0 6%, transparent 7%),
+    linear-gradient(145deg, #38bdf8, #2563eb 52%, #1d4ed8);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+  font-size: 1.85rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: #2563eb;
@@ -98,6 +121,13 @@ h2 {
 
 h1 {
   font-size: clamp(1.65rem, 1.45rem + 1vw, 2.5rem);
+}
+
+.header-subtitle {
+  margin: 7px 0 0;
+  color: #475569;
+  font-size: 0.96rem;
+  font-weight: 700;
 }
 
 h2 {

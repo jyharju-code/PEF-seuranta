@@ -70,7 +70,7 @@ let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
 
 const COPY = {
   fi: {
-    appName: "PEF-seuranta",
+    appName: "Puhallus",
     statusSaved: "Tallennettu tähän laitteeseen",
     saved: "Tallennettu",
     periodUpdated: "Jakso päivitetty",
@@ -87,6 +87,7 @@ const COPY = {
     evening: "Ilta",
     lead:
       "Puhelimessa toimiva PEF-seurannan apuri, joka tallentaa arvot tähän laitteeseen ja vie täytetyn PDF-taulukon terveydenhuollolle.",
+    selectedMeasurement: "Valittu mittaus",
     language: "Kieli",
     device: "Puhelin",
     iphone: "iPhone",
@@ -174,7 +175,7 @@ const COPY = {
     eveningAfter: "Ilta jälkeen"
   },
   en: {
-    appName: "PEF tracker",
+    appName: "Puhallus",
     statusSaved: "Saved on this device",
     saved: "Saved",
     periodUpdated: "Period updated",
@@ -191,6 +192,7 @@ const COPY = {
     evening: "Evening",
     lead:
       "A phone-friendly PEF diary that stores values on this device and exports a filled PDF sheet for healthcare.",
+    selectedMeasurement: "Selected measurement",
     language: "Language",
     device: "Phone",
     iphone: "iPhone",
@@ -344,17 +346,24 @@ function loadState(): AppState {
     const parsed = JSON.parse(stored) as Partial<AppState>;
     const settings = { ...fallback.settings, ...parsed.settings };
     const days = settings.weeks === 1 ? 7 : 14;
+    const entries = buildEntries(settings.startDate, days, parsed.entries ?? []);
     return {
       ...fallback,
       ...parsed,
       settings,
-      entries: buildEntries(settings.startDate, days, parsed.entries ?? []),
-      activeIndex: Math.min(parsed.activeIndex ?? 0, days - 1),
+      entries,
+      activeIndex: preferredActiveIndex(entries, parsed.activeIndex),
       activeSession: parsed.activeSession ?? "morning"
     };
   } catch {
     return snapshotState ?? fallback;
   }
+}
+
+function preferredActiveIndex(entries: DayEntry[], savedIndex: number | undefined) {
+  const todayIndex = entries.findIndex((entry) => entry.date === todayIso());
+  if (todayIndex >= 0) return todayIndex;
+  return Math.min(savedIndex ?? 0, entries.length - 1);
 }
 
 function detectDevice(): DevicePlatform {
@@ -405,9 +414,13 @@ function render() {
 
   app.innerHTML = `
     <header class="app-header">
-      <div>
-        <p class="eyebrow">${c.appName}</p>
-        <h1>${formatLongDate(activeDay.date)} ${sessionLabel(state.activeSession).toLowerCase()}</h1>
+      <div class="brand-heading">
+        <span class="app-logo" aria-hidden="true">P</span>
+        <div>
+          <p class="eyebrow">${c.appName}</p>
+          <h1>${c.appName}</h1>
+          <p class="header-subtitle">${c.selectedMeasurement}: ${formatLongDate(activeDay.date)} ${sessionLabel(state.activeSession).toLowerCase()}</p>
+        </div>
       </div>
       <div class="status">${escapeHtml(state.status)}</div>
     </header>
@@ -885,7 +898,7 @@ function exportCalendar() {
   const calendar = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//PEF-seuranta//FI",
+    "PRODID:-//Puhallus//FI",
     "CALSCALE:GREGORIAN",
     events,
     "END:VCALENDAR"
@@ -896,7 +909,7 @@ function exportCalendar() {
 }
 
 async function exportBackup() {
-  const filename = `PEF-seuranta-varmuuskopio-${compactDateTime(new Date())}.json`;
+  const filename = `Puhallus-varmuuskopio-${compactDateTime(new Date())}.json`;
   const payload = JSON.stringify(state, null, 2);
   const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
   const file = new File([blob], filename, { type: blob.type });

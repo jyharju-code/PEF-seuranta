@@ -1,7 +1,7 @@
 {
-  "name": "PEF-seuranta",
-  "short_name": "PEF",
-  "description": "PEF-seuranta, paikallinen tallennus ja täytetty PDF-vienti",
+  "name": "Puhallus",
+  "short_name": "Puhallus",
+  "description": "Puhallus: PEF-seuranta, paikallinen tallennus ja täytetty PDF-vienti",
   "id": ".",
   "start_url": ".",
   "scope": ".",
