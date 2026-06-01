@@ -122,7 +122,10 @@ const COPY = {
     exportPdf: "Vie täytetty PDF",
     exportCalendar: "Kalenterimuistutukset",
     exportBackup: "Varmuuskopio (JSON)",
+    restoreBackup: "Palauta varmuuskopio",
     backupReady: "Varmuuskopio ladattu",
+    backupRestored: "Varmuuskopio palautettu",
+    backupInvalid: "Varmuuskopio ei ole kelvollinen",
     enableNotifications: "Salli appimuistutus",
     export: "Vienti",
     overview: "Yhteenveto",
@@ -203,7 +206,10 @@ const COPY = {
     exportPdf: "Export filled PDF",
     exportCalendar: "Calendar reminders",
     exportBackup: "Backup (JSON)",
+    restoreBackup: "Restore backup",
     backupReady: "Backup downloaded",
+    backupRestored: "Backup restored",
+    backupInvalid: "The backup file is not valid",
     enableNotifications: "Allow app reminder",
     export: "Export",
     overview: "Summary",
@@ -487,6 +493,8 @@ function render() {
         <button class="primary-action" data-action="export-pdf">${c.exportPdf}</button>
         <button data-action="export-calendar">${c.exportCalendar}</button>
         <button data-action="export-backup">${c.exportBackup}</button>
+        <button data-action="restore-backup">${c.restoreBackup}</button>
+        <input class="visually-hidden" type="file" accept="application/json,.json" data-backup-file />
         <button data-action="enable-notifications">${c.enableNotifications}</button>
       </section>
 
@@ -555,6 +563,10 @@ function render() {
   app.querySelector<HTMLButtonElement>("[data-action='export-pdf']")?.addEventListener("click", exportPdf);
   app.querySelector<HTMLButtonElement>("[data-action='export-calendar']")?.addEventListener("click", exportCalendar);
   app.querySelector<HTMLButtonElement>("[data-action='export-backup']")?.addEventListener("click", exportBackup);
+  app.querySelector<HTMLButtonElement>("[data-action='restore-backup']")?.addEventListener("click", () => {
+    app.querySelector<HTMLInputElement>("[data-backup-file]")?.click();
+  });
+  app.querySelector<HTMLInputElement>("[data-backup-file]")?.addEventListener("change", restoreBackup);
   app
     .querySelector<HTMLButtonElement>("[data-action='enable-notifications']")
     ?.addEventListener("click", enableNotifications);
@@ -783,6 +795,126 @@ function exportBackup() {
   );
   saveState(copy().backupReady);
   render();
+}
+
+async function restoreBackup(event: Event) {
+  const input = event.currentTarget as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
+
+  try {
+    const parsed = JSON.parse(await file.text()) as unknown;
+    const restored = validateBackupState(parsed);
+    if (!restored) {
+      saveState(copy().backupInvalid);
+      render();
+      return;
+    }
+    state = restored;
+    saveState(copy().backupRestored);
+    render();
+  } catch {
+    saveState(copy().backupInvalid);
+    render();
+  }
+}
+
+function validateBackupState(value: unknown): AppState | null {
+  if (!isRecord(value) || !isRecord(value.settings) || !Array.isArray(value.entries)) return null;
+  const settings = value.settings;
+  if (
+    !isLanguage(settings.language) ||
+    !isDevicePlatform(settings.device) ||
+    !isString(settings.patientName) ||
+    !isString(settings.patientId) ||
+    typeof settings.hospital !== "boolean" ||
+    !isString(settings.referenceValue) ||
+    (settings.weeks !== 1 && settings.weeks !== 2) ||
+    !isString(settings.startDate) ||
+    !isString(settings.year) ||
+    !isString(settings.morningReminder) ||
+    !isString(settings.eveningReminder)
+  ) {
+    return null;
+  }
+
+  const entries = value.entries.map(validateEntry);
+  if (entries.some((entry) => entry === null)) return null;
+
+  return {
+    settings: {
+      language: settings.language,
+      device: settings.device,
+      patientName: settings.patientName,
+      patientId: settings.patientId,
+      hospital: settings.hospital,
+      referenceValue: settings.referenceValue,
+      weeks: settings.weeks,
+      startDate: settings.startDate,
+      year: settings.year,
+      morningReminder: settings.morningReminder,
+      eveningReminder: settings.eveningReminder
+    },
+    entries: entries as DayEntry[],
+    activeIndex:
+      typeof value.activeIndex === "number" && Number.isInteger(value.activeIndex)
+        ? Math.max(0, Math.min(value.activeIndex, value.entries.length - 1))
+        : 0,
+    activeSession: value.activeSession === "evening" ? "evening" : "morning",
+    status: isString(value.status) ? value.status : COPY[settings.language].statusSaved
+  };
+}
+
+function validateEntry(value: unknown): DayEntry | null {
+  if (!isRecord(value) || !isString(value.date)) return null;
+  const morning = validateSession(value.morning);
+  const evening = validateSession(value.evening);
+  if (!morning || !evening) return null;
+  return { date: value.date, morning, evening };
+}
+
+function validateSession(value: unknown): BlowSession | null {
+  if (
+    !isRecord(value) ||
+    !isString(value.time) ||
+    !isString(value.afterTime) ||
+    !isBlowValues(value.before) ||
+    !isBlowValues(value.after) ||
+    !isString(value.symptomTime) ||
+    !isString(value.symptoms)
+  ) {
+    return null;
+  }
+
+  return {
+    time: value.time,
+    afterTime: value.afterTime,
+    before: value.before,
+    after: value.after,
+    symptomTime: value.symptomTime,
+    symptoms: value.symptoms
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isLanguage(value: unknown): value is Language {
+  return value === "fi" || value === "en";
+}
+
+function isDevicePlatform(value: unknown): value is DevicePlatform {
+  return value === "iphone" || value === "android";
+}
+
+function isBlowValues(value: unknown): value is BlowValues {
+  return Array.isArray(value) && value.length === 3 && value.every(isString);
 }
 
 function calendarEvent(summary: string, date: string, time: string, count: number) {
