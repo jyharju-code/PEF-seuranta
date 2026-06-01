@@ -432,7 +432,7 @@ function render() {
         ${state.entries
           .map(
             (entry, index) => `
-              <button class="day-pill ${index === state.activeIndex ? "is-active" : ""}" data-day="${index}">
+              <button class="day-pill ${index === state.activeIndex ? "is-active" : ""}" data-day="${index}" aria-label="${c.day} ${index + 1}, ${formatShortDate(entry.date)}" ${index === state.activeIndex ? 'aria-current="date"' : ""}>
                 <span>${index + 1}</span>
                 <small>${formatShortDate(entry.date)}</small>
               </button>
@@ -587,7 +587,7 @@ function field(label: string, path: string, value: string, type: string) {
 
 function segmentButton(segment: string, value: string, label: string, active: boolean) {
   return `
-    <button class="${active ? "is-active" : ""}" data-segment="${segment}" data-value="${value}">
+    <button class="${active ? "is-active" : ""}" data-segment="${segment}" data-value="${value}" aria-pressed="${active}">
       ${label}
     </button>
   `;
@@ -595,7 +595,7 @@ function segmentButton(segment: string, value: string, label: string, active: bo
 
 function sessionButton(session: SessionKey) {
   return `
-    <button class="${state.activeSession === session ? "is-active" : ""}" data-session="${session}">
+    <button class="${state.activeSession === session ? "is-active" : ""}" data-session="${session}" aria-pressed="${state.activeSession === session}">
       ${sessionLabel(session)}
     </button>
   `;

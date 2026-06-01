@@ -50,7 +50,7 @@ input {
   padding: 9px 10px;
 }
 
-input:focus,
+input:focus-visible,
 button:focus-visible {
   outline: 3px solid rgba(37, 99, 235, 0.22);
   outline-offset: 2px;
