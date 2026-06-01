@@ -108,7 +108,7 @@ function toNumbers(values: string[]) {
     .filter((value) => Number.isFinite(value) && value > 0);
 }
 
-function bestValue(values: string[]) {
+export function bestValue(values: string[]) {
   const numbers = toNumbers(values);
   return numbers.length ? Math.max(...numbers) : null;
 }
@@ -261,7 +261,9 @@ function drawPolylineGaps(
   }
 }
 
-function chooseGraphScale(values: number[]) {
+export function chooseGraphScale(values: number[]) {
+  if (!values.length) return { minScale: 0, maxScale: 100 };
+
   const minData = Math.min(...values);
   const maxData = Math.max(...values);
   let minScale = Math.max(0, Math.floor(minData / 100) * 100);
@@ -369,7 +371,7 @@ function drawTriangle(page: import("pdf-lib").PDFPage, x: number, y: number, col
   page.drawSvgPath("M 0 -2.7 L 0 2.7 L 5.4 0 Z", { x, y, color });
 }
 
-function parseSymptomValues(value: string) {
+export function parseSymptomValues(value: string) {
   return value
     .split(/[,\s;]+/)
     .map((part) => Number(part.trim()))
