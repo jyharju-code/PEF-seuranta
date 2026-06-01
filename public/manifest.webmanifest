@@ -1,21 +1,28 @@
 {
   "name": "PEF-seuranta",
   "short_name": "PEF",
-  "description": "PEF-seuranta ja PDF-vienti",
+  "description": "PEF-seuranta, paikallinen tallennus ja täytetty PDF-vienti",
+  "id": ".",
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "background_color": "#f8fafc",
   "theme_color": "#f8fafc",
+  "orientation": "portrait",
+  "categories": ["health", "medical", "productivity"],
   "icons": [
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
