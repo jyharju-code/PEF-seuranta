@@ -34,6 +34,7 @@ interface Settings {
   patientName: string;
   patientId: string;
   hospital: boolean;
+  referenceValue: string;
   weeks: 1 | 2;
   startDate: string;
   year: string;
@@ -103,6 +104,7 @@ const COPY = {
     startDate: "Aloituspäivä",
     year: "Vuosi",
     hospital: "Iho- ja allergiasairaala",
+    referenceValue: "Oma paras / viitearvo (l/min)",
     days: "Päivät",
     measurement: "Mittaus",
     sessionChoice: "Aamu tai ilta",
@@ -130,6 +132,7 @@ const COPY = {
     bronchodilatorMax: "Suurin vaste",
     bronchodilatorSignificant: "Merkittäviä vasteita",
     bronchodilatorMarker: "vaste",
+    referenceSummary: "Oma paras / viitearvo",
     day: "Päivä",
     morningBefore: "Aamu ennen",
     morningAfter: "Aamu jälkeen",
@@ -180,6 +183,7 @@ const COPY = {
     startDate: "Start date",
     year: "Year",
     hospital: "Skin and Allergy Hospital",
+    referenceValue: "Personal best / reference (l/min)",
     days: "Days",
     measurement: "Measurement",
     sessionChoice: "Morning or evening",
@@ -207,6 +211,7 @@ const COPY = {
     bronchodilatorMax: "Max response",
     bronchodilatorSignificant: "Significant responses",
     bronchodilatorMarker: "response",
+    referenceSummary: "Personal best / reference",
     day: "Day",
     morningBefore: "Morning before",
     morningAfter: "Morning after",
@@ -236,6 +241,7 @@ const defaultState = (): AppState => {
       patientName: "",
       patientId: "",
       hospital: false,
+      referenceValue: "",
       weeks: 2,
       startDate,
       year,
@@ -399,6 +405,7 @@ function render() {
           ${field(c.patientId, "settings.patientId", state.settings.patientId, "text")}
           ${field(c.startDate, "settings.startDate", state.settings.startDate, "date")}
           ${field(c.year, "settings.year", state.settings.year, "number")}
+          ${field(c.referenceValue, "settings.referenceValue", state.settings.referenceValue, "number")}
           ${field(c.morning, "settings.morningReminder", state.settings.morningReminder, "time")}
           ${field(c.evening, "settings.eveningReminder", state.settings.eveningReminder, "time")}
           <label class="check-row">
@@ -639,6 +646,10 @@ function metricsSummaryBlock(
         <span>${c.bronchodilatorTitle}</span>
         <strong>${c.bronchodilatorSignificant}: ${bronchodilatorSummary.significantCount}</strong>
       </article>
+      <article>
+        <span>${c.referenceSummary}</span>
+        <strong>${displayBest(parseReferenceValue(state.settings.referenceValue))}</strong>
+      </article>
     </div>
   `;
 }
@@ -707,6 +718,11 @@ function formatPercent(value: number | null) {
 function formatResponse(percent: number | null, delta: number | null) {
   if (percent === null || delta === null) return "-";
   return `${formatPercent(percent)} / ${delta.toFixed(0)} l/min`;
+}
+
+function parseReferenceValue(value: string) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
 }
 
 async function exportPdf() {

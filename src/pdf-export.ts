@@ -23,6 +23,7 @@ export interface PdfAppState {
     patientName: string;
     patientId: string;
     hospital: boolean;
+    referenceValue?: string;
     weeks: 1 | 2;
     startDate: string;
     year: string;
@@ -100,6 +101,11 @@ function bestValue(values: string[]) {
   return numbers.length ? Math.max(...numbers) : null;
 }
 
+function parseReferenceValue(value?: string) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
 function drawGraph(
   page: import("pdf-lib").PDFPage,
   state: PdfAppState,
@@ -117,6 +123,8 @@ function drawGraph(
       ].filter((value): value is number => value !== null);
     })
   );
+  const referenceValue = parseReferenceValue(state.settings.referenceValue);
+  if (referenceValue !== null) values.push(referenceValue);
 
   if (!values.length) return;
 
@@ -151,6 +159,14 @@ function drawGraph(
   });
 
   // Trend lines are drawn before markers so crisp vector symbols remain legible.
+  if (referenceValue !== null) {
+    page.drawLine({
+      start: { x: xLeft, y: yForValue(referenceValue) },
+      end: { x: xLeft + pairWidth * state.entries.length, y: yForValue(referenceValue) },
+      thickness: 0.45,
+      color: rgb(0.72, 0.76, 0.82)
+    });
+  }
   drawPolylineGaps(page, beforeSeries, color, 0.6);
   drawPolylineGaps(page, afterSeries, color, 0.45, 0.62, [2.5, 2.2]);
 
