@@ -166,16 +166,48 @@ function drawGraph(
   state.entries.forEach((entry, dayIndex) => {
     (["morning", "evening"] as PdfSessionKey[]).forEach((sessionKey, sessionIndex) => {
       const session = entry[sessionKey];
+      const subLeft = xLeft + pairWidth * dayIndex + subWidth * sessionIndex;
+      const subRight = subLeft + subWidth;
       const x = xLeft + pairWidth * dayIndex + subWidth * (sessionIndex + 0.5);
       const before = bestValue(session.before);
       const after = bestValue(session.after);
       if (before !== null) drawXMarker(page, x, yForValue(before), color);
       if (after !== null) drawCircleMarker(page, x, yForValue(after), color);
-      parseSymptomValues(session.symptoms).slice(0, 3).forEach((value, symptomIndex) => {
-        drawTriangle(page, x + 5.7 + symptomIndex * 4.0, yForValue(value), color);
+      const symptomValues = parseSymptomValues(session.symptoms).slice(0, 3);
+      symptomValues.forEach((value, symptomIndex) => {
+        const point = symptomTrianglePoint(
+          x,
+          yForValue(value),
+          symptomIndex,
+          symptomValues.length,
+          subLeft,
+          subRight
+        );
+        drawTriangle(page, point.x, point.y, color);
       });
     });
   });
+}
+
+function symptomTrianglePoint(
+  centerX: number,
+  y: number,
+  index: number,
+  count: number,
+  subLeft: number,
+  subRight: number
+) {
+  const triangleWidth = 5.4;
+  const margin = 1.0;
+  const minX = subLeft + margin;
+  const maxX = subRight - triangleWidth - margin;
+  const preferredX = centerX + 5.7 + index * 4.0;
+  const x = Math.min(maxX, Math.max(minX, preferredX));
+  const isConstrained = x !== preferredX;
+  return {
+    x,
+    y: isConstrained ? y + (index - (count - 1) / 2) * 4.0 : y
+  };
 }
 
 function drawPolylineGaps(
