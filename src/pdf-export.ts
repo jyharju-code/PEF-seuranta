@@ -160,7 +160,7 @@ function drawGraph(
     const y = yForValue(value);
     // Avoid the template's printed “l/min.” label at the top and legend row at the bottom.
     if (y > graphTopY - 7 || y < graphBottomY + 9) continue;
-    drawRight(page, String(value), 108.8, y - labelBaselineOffset, labelSize, font, color);
+    drawRightWithKnockout(page, String(value), 108.8, y - labelBaselineOffset, labelSize, font, color);
   }
 
   state.entries.forEach((entry, dayIndex) => {
@@ -252,6 +252,26 @@ function drawRight(
   color: ReturnType<typeof rgb>
 ) {
   const width = font.widthOfTextAtSize(text, size);
+  drawText(page, text, rightX - width, y, size, font, color);
+}
+
+function drawRightWithKnockout(
+  page: import("pdf-lib").PDFPage,
+  text: string,
+  rightX: number,
+  y: number,
+  size: number,
+  font: import("pdf-lib").PDFFont,
+  color: ReturnType<typeof rgb>
+) {
+  const width = font.widthOfTextAtSize(text, size);
+  page.drawRectangle({
+    x: rightX - width - 1.2,
+    y: y - 1.2,
+    width: width + 2.4,
+    height: size + 1.6,
+    color: rgb(1, 1, 1)
+  });
   drawText(page, text, rightX - width, y, size, font, color);
 }
 
