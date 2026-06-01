@@ -52,6 +52,8 @@ export async function createPefPdfBytes(state: PdfAppState, template: ArrayBuffe
   // Header baselines are tuned to the printed fill-in rules on the HUS/HYKS sheet.
   drawText(page, patient, 455, topY(101), 9, regular, blue);
   drawText(page, state.settings.year, 280, topY(101), 9, regular, blue);
+  // The template has “☐ Iho-ja allergiasairaala ☐”; the left checkbox belongs to the label.
+  // Render/text-position check: left box bbox x≈249.6–257.8, right box x≈356.0–364.1.
   if (state.settings.hospital) drawCross(page, 253.5, topY(82.8), 3.2, 0.55, blue);
   drawCross(page, state.settings.weeks === 1 ? 147.3 : 193.8, topY(97.3), 3.2, 0.55, blue);
 
