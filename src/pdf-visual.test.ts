@@ -29,8 +29,8 @@ function mockState(): PdfAppState {
 
   return {
     settings: {
-      patientName: "Matti Virtanen",
-      patientId: "140379-213P",
+      patientName: "Visual Test Patient",
+      patientId: "010101-000X",
       hospital: true,
       referenceValue: "450",
       weeks: 2,

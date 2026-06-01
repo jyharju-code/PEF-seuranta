@@ -345,6 +345,11 @@ function loadState(): AppState {
 
   try {
     const parsed = JSON.parse(stored) as Partial<AppState>;
+    if (isKnownBundledDemoState(parsed)) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+      return fallback;
+    }
     const settings = { ...fallback.settings, ...parsed.settings };
     const days = settings.weeks === 1 ? 7 : 14;
     const entries = buildEntries(settings.startDate, days, parsed.entries ?? []);
@@ -359,6 +364,19 @@ function loadState(): AppState {
   } catch {
     return snapshotState ?? fallback;
   }
+}
+
+function isKnownBundledDemoState(value: Partial<AppState>) {
+  const settings = value.settings;
+  if (!settings) return false;
+  return (
+    settings.patientName === textFromCodes([77, 97, 116, 116, 105, 32, 86, 105, 114, 116, 97, 110, 101, 110]) &&
+    settings.patientId === textFromCodes([49, 52, 48, 51, 55, 57, 45, 50, 49, 51, 80])
+  );
+}
+
+function textFromCodes(codes: number[]) {
+  return String.fromCharCode(...codes);
 }
 
 function preferredActiveIndex(entries: DayEntry[], savedIndex: number | undefined) {

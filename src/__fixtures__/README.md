@@ -1,6 +1,6 @@
 # PDF visual baseline
 
-`pef-visual-baseline.png` is generated from the fixed 14-day Matti Virtanen mock dataset in `src/pdf-visual.test.ts` using the real HUS/HYKS template.
+`pef-visual-baseline.png` is generated from the fixed 14-day visual test mock dataset in `src/pdf-visual.test.ts` using the real HUS/HYKS template.
 
 Refresh after an intentional PDF layout change:
 
