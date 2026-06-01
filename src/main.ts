@@ -1,4 +1,5 @@
 import { createPefPdfBytes } from "./pdf-export";
+import { addCalendarDays, isoFromLocalDate, localDateFromIso, yearFromIsoDate } from "./date-utils";
 import {
   bronchodilatorResponseForSession,
   summarizeBronchodilatorResponses,
@@ -290,11 +291,11 @@ const emptySession = (): BlowSession => ({
   symptoms: ""
 });
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => isoFromLocalDate();
 
 const defaultState = (): AppState => {
   const startDate = todayIso();
-  const year = String(new Date(startDate).getFullYear());
+  const year = yearFromIsoDate(startDate);
   return {
     settings: {
       language: "fi",
@@ -393,9 +394,7 @@ function buildEntries(startDate: string, days: number, existing: DayEntry[]): Da
 }
 
 function addDays(dateIso: string, days: number) {
-  const date = new Date(`${dateIso}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return addCalendarDays(dateIso, days);
 }
 
 function render() {
@@ -764,7 +763,7 @@ function handleInput(event: Event, shouldRender: boolean) {
   setByPath(state, path, value);
 
   if (path === "settings.startDate" || path === "settings.weeks") {
-    state.settings.year = String(new Date(`${state.settings.startDate}T00:00:00`).getFullYear());
+    state.settings.year = yearFromIsoDate(state.settings.startDate);
     state.entries = buildEntries(state.settings.startDate, state.settings.weeks === 1 ? 7 : 14, state.entries);
     state.activeIndex = Math.min(state.activeIndex, state.entries.length - 1);
     shouldRender = true;
@@ -1279,7 +1278,7 @@ function formatLongDate(date: string) {
     weekday: "short",
     day: "numeric",
     month: "numeric"
-  }).format(new Date(`${date}T00:00:00`));
+  }).format(localDateFromIso(date));
 }
 
 function escapeHtml(value: string) {

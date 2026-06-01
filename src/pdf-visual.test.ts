@@ -4,16 +4,11 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
+import { addCalendarDays } from "./date-utils";
 import { createPefPdfBytes, type PdfAppState } from "./pdf-export";
 
 const startDate = "2026-05-31";
 const baselinePath = resolve("src/__fixtures__/pef-visual-baseline.png");
-
-function addDays(dateIso: string, days: number) {
-  const date = new Date(`${dateIso}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-}
 
 function session(time: string, afterTime: string, beforeBest: number, afterBest: number, symptoms = "") {
   return {
@@ -43,7 +38,7 @@ function mockState(): PdfAppState {
       year: "2026"
     },
     entries: Array.from({ length: 14 }, (_, index) => ({
-      date: addDays(startDate, index),
+      date: addCalendarDays(startDate, index),
       morning: session(
         "07:30",
         "07:45",
