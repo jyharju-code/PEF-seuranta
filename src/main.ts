@@ -1,4 +1,5 @@
 import { createPefPdfBytes } from "./pdf-export";
+import { summarizeDiurnalVariation } from "./metrics";
 import "./styles.css";
 
 const BASE_URL = import.meta.env.BASE_URL;
@@ -117,6 +118,10 @@ const COPY = {
     enableNotifications: "Salli appimuistutus",
     export: "Vienti",
     overview: "Yhteenveto",
+    diurnalTitle: "Vuorokausivaihtelu",
+    diurnalMean: "Keskiarvo",
+    diurnalMax: "Suurin",
+    noDiurnalData: "Lisää aamu- ja ilta-arvot nähdäksesi vaihtelun.",
     day: "Päivä",
     morningBefore: "Aamu ennen",
     morningAfter: "Aamu jälkeen",
@@ -186,6 +191,10 @@ const COPY = {
     enableNotifications: "Allow app reminder",
     export: "Export",
     overview: "Summary",
+    diurnalTitle: "Diurnal variation",
+    diurnalMean: "Mean",
+    diurnalMax: "Max",
+    noDiurnalData: "Add morning and evening values to see variation.",
     day: "Day",
     morningBefore: "Morning before",
     morningAfter: "Morning after",
@@ -309,6 +318,7 @@ function render() {
     qualityWarning(activeSession.before, c.beforeMedication),
     qualityWarning(activeSession.after, c.afterMedication)
   ].filter(Boolean);
+  const diurnalSummary = summarizeDiurnalVariation(state.entries);
 
   app.innerHTML = `
     <header class="app-header">
@@ -459,6 +469,7 @@ function render() {
         <div class="section-heading">
           <h2>${c.overview}</h2>
         </div>
+        ${diurnalSummaryBlock(diurnalSummary)}
         <div class="overview-table">
           <div class="overview-head">
             <span>${c.day}</span><span>${c.morningBefore}</span><span>${c.morningAfter}</span><span>${c.eveningBefore}</span><span>${c.eveningAfter}</span>
@@ -583,6 +594,26 @@ function summaryRow(entry: DayEntry) {
   `;
 }
 
+function diurnalSummaryBlock(summary: ReturnType<typeof summarizeDiurnalVariation>) {
+  const c = copy();
+  if (summary.meanPercent === null || summary.maxPercent === null) {
+    return `<div class="metrics-strip" aria-label="${c.diurnalTitle}"><p>${c.noDiurnalData}</p></div>`;
+  }
+
+  return `
+    <div class="metrics-strip" aria-label="${c.diurnalTitle}">
+      <article>
+        <span>${c.diurnalTitle}</span>
+        <strong>${c.diurnalMean}: ${formatPercent(summary.meanPercent)}</strong>
+      </article>
+      <article>
+        <span>${c.diurnalTitle}</span>
+        <strong>${c.diurnalMax}: ${formatPercent(summary.maxPercent)}</strong>
+      </article>
+    </div>
+  `;
+}
+
 function handleInput(event: Event, shouldRender: boolean) {
   const input = event.currentTarget as HTMLInputElement;
   const path = input.dataset.path;
@@ -634,6 +665,10 @@ function qualityWarning(values: string[], label: string) {
 
 function displayBest(value: number | null) {
   return value ? `${value}` : "-";
+}
+
+function formatPercent(value: number | null) {
+  return value === null ? "-" : `${value.toFixed(1)} %`;
 }
 
 async function exportPdf() {

@@ -418,6 +418,43 @@ main {
   border-bottom: 1px solid #e2e8f0;
 }
 
+.metrics-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fbff;
+}
+
+.metrics-strip p {
+  margin: 0;
+  color: #475569;
+  font-weight: 700;
+}
+
+.metrics-strip article {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.metrics-strip span {
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.metrics-strip strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
 .overview-table {
   display: grid;
   min-width: 680px;
