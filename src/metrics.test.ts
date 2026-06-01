@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { bestValue, dailyDiurnalVariation, summarizeDiurnalVariation } from "./metrics";
+import {
+  bestValue,
+  bronchodilatorResponseForSession,
+  dailyDiurnalVariation,
+  summarizeBronchodilatorResponses,
+  summarizeDiurnalVariation
+} from "./metrics";
 
 const entry = (date: string, morning: string[], evening: string[]) => ({
   date,
@@ -49,5 +55,52 @@ describe("summarizeDiurnalVariation", () => {
     const summary = summarizeDiurnalVariation([entry("2026-05-31", [""], [""])]);
     expect(summary.meanPercent).toBeNull();
     expect(summary.maxPercent).toBeNull();
+  });
+});
+
+describe("bronchodilatorResponseForSession", () => {
+  it("computes percent response and absolute delta", () => {
+    const response = bronchodilatorResponseForSession({
+      before: ["390", "400"],
+      after: ["455", "460"]
+    });
+
+    expect(response.delta).toBe(60);
+    expect(response.percent).toBeCloseTo(15);
+    expect(response.meetsThreshold).toBe(true);
+  });
+
+  it("requires both 15 percent and 60 l/min for the marker", () => {
+    expect(
+      bronchodilatorResponseForSession({ before: ["300"], after: ["350"] }).meetsThreshold
+    ).toBe(false);
+    expect(
+      bronchodilatorResponseForSession({ before: ["500"], after: ["560"] }).meetsThreshold
+    ).toBe(false);
+  });
+
+  it("returns null values when before or after is missing", () => {
+    expect(bronchodilatorResponseForSession({ before: ["400"], after: [""] })).toEqual({
+      percent: null,
+      delta: null,
+      meetsThreshold: false
+    });
+  });
+});
+
+describe("summarizeBronchodilatorResponses", () => {
+  it("summarizes all morning and evening sessions", () => {
+    const summary = summarizeBronchodilatorResponses([
+      {
+        ...entry("2026-05-31", ["400"], ["380"]),
+        morning: { before: ["400"], after: ["460"] },
+        evening: { before: ["380"], after: ["390"] }
+      }
+    ]);
+
+    expect(summary.sessions).toHaveLength(2);
+    expect(summary.significantCount).toBe(1);
+    expect(summary.maxDelta).toBe(60);
+    expect(summary.maxPercent).toBeCloseTo(15);
   });
 });

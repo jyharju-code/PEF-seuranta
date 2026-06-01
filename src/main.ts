@@ -1,5 +1,9 @@
 import { createPefPdfBytes } from "./pdf-export";
-import { summarizeDiurnalVariation } from "./metrics";
+import {
+  bronchodilatorResponseForSession,
+  summarizeBronchodilatorResponses,
+  summarizeDiurnalVariation
+} from "./metrics";
 import "./styles.css";
 
 const BASE_URL = import.meta.env.BASE_URL;
@@ -122,6 +126,10 @@ const COPY = {
     diurnalMean: "Keskiarvo",
     diurnalMax: "Suurin",
     noDiurnalData: "Lisää aamu- ja ilta-arvot nähdäksesi vaihtelun.",
+    bronchodilatorTitle: "Avaavan lääkkeen vaste",
+    bronchodilatorMax: "Suurin vaste",
+    bronchodilatorSignificant: "Merkittäviä vasteita",
+    bronchodilatorMarker: "vaste",
     day: "Päivä",
     morningBefore: "Aamu ennen",
     morningAfter: "Aamu jälkeen",
@@ -195,6 +203,10 @@ const COPY = {
     diurnalMean: "Mean",
     diurnalMax: "Max",
     noDiurnalData: "Add morning and evening values to see variation.",
+    bronchodilatorTitle: "Bronchodilator response",
+    bronchodilatorMax: "Max response",
+    bronchodilatorSignificant: "Significant responses",
+    bronchodilatorMarker: "response",
     day: "Day",
     morningBefore: "Morning before",
     morningAfter: "Morning after",
@@ -319,6 +331,7 @@ function render() {
     qualityWarning(activeSession.after, c.afterMedication)
   ].filter(Boolean);
   const diurnalSummary = summarizeDiurnalVariation(state.entries);
+  const bronchodilatorSummary = summarizeBronchodilatorResponses(state.entries);
 
   app.innerHTML = `
     <header class="app-header">
@@ -469,7 +482,7 @@ function render() {
         <div class="section-heading">
           <h2>${c.overview}</h2>
         </div>
-        ${diurnalSummaryBlock(diurnalSummary)}
+        ${metricsSummaryBlock(diurnalSummary, bronchodilatorSummary)}
         <div class="overview-table">
           <div class="overview-head">
             <span>${c.day}</span><span>${c.morningBefore}</span><span>${c.morningAfter}</span><span>${c.eveningBefore}</span><span>${c.eveningAfter}</span>
@@ -582,36 +595,56 @@ function summaryRow(entry: DayEntry) {
   const mAfter = bestValue(entry.morning.after);
   const eBefore = bestValue(entry.evening.before);
   const eAfter = bestValue(entry.evening.after);
+  const morningResponse = bronchodilatorResponseForSession(entry.morning);
+  const eveningResponse = bronchodilatorResponseForSession(entry.evening);
   const active = entry.date === state.entries[state.activeIndex].date ? " is-current" : "";
   return `
     <button class="overview-row${active}" data-day="${state.entries.indexOf(entry)}">
       <span>${formatShortDate(entry.date)}</span>
       <span>${displayBest(mBefore)}</span>
-      <span>${displayBest(mAfter)}</span>
+      <span>${displayBest(mAfter)}${responseMarker(morningResponse.meetsThreshold)}</span>
       <span>${displayBest(eBefore)}</span>
-      <span>${displayBest(eAfter)}</span>
+      <span>${displayBest(eAfter)}${responseMarker(eveningResponse.meetsThreshold)}</span>
     </button>
   `;
 }
 
-function diurnalSummaryBlock(summary: ReturnType<typeof summarizeDiurnalVariation>) {
+function metricsSummaryBlock(
+  diurnalSummary: ReturnType<typeof summarizeDiurnalVariation>,
+  bronchodilatorSummary: ReturnType<typeof summarizeBronchodilatorResponses>
+) {
   const c = copy();
-  if (summary.meanPercent === null || summary.maxPercent === null) {
-    return `<div class="metrics-strip" aria-label="${c.diurnalTitle}"><p>${c.noDiurnalData}</p></div>`;
-  }
+  const diurnalCards =
+    diurnalSummary.meanPercent === null || diurnalSummary.maxPercent === null
+      ? `<p>${c.noDiurnalData}</p>`
+      : `
+        <article>
+          <span>${c.diurnalTitle}</span>
+          <strong>${c.diurnalMean}: ${formatPercent(diurnalSummary.meanPercent)}</strong>
+        </article>
+        <article>
+          <span>${c.diurnalTitle}</span>
+          <strong>${c.diurnalMax}: ${formatPercent(diurnalSummary.maxPercent)}</strong>
+        </article>
+      `;
 
   return `
-    <div class="metrics-strip" aria-label="${c.diurnalTitle}">
+    <div class="metrics-strip" aria-label="${c.overview}">
+      ${diurnalCards}
       <article>
-        <span>${c.diurnalTitle}</span>
-        <strong>${c.diurnalMean}: ${formatPercent(summary.meanPercent)}</strong>
+        <span>${c.bronchodilatorTitle}</span>
+        <strong>${c.bronchodilatorMax}: ${formatResponse(bronchodilatorSummary.maxPercent, bronchodilatorSummary.maxDelta)}</strong>
       </article>
       <article>
-        <span>${c.diurnalTitle}</span>
-        <strong>${c.diurnalMax}: ${formatPercent(summary.maxPercent)}</strong>
+        <span>${c.bronchodilatorTitle}</span>
+        <strong>${c.bronchodilatorSignificant}: ${bronchodilatorSummary.significantCount}</strong>
       </article>
     </div>
   `;
+}
+
+function responseMarker(show: boolean) {
+  return show ? ` <em class="response-marker">${copy().bronchodilatorMarker}</em>` : "";
 }
 
 function handleInput(event: Event, shouldRender: boolean) {
@@ -669,6 +702,11 @@ function displayBest(value: number | null) {
 
 function formatPercent(value: number | null) {
   return value === null ? "-" : `${value.toFixed(1)} %`;
+}
+
+function formatResponse(percent: number | null, delta: number | null) {
+  if (percent === null || delta === null) return "-";
+  return `${formatPercent(percent)} / ${delta.toFixed(0)} l/min`;
 }
 
 async function exportPdf() {

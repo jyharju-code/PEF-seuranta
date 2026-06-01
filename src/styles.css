@@ -492,6 +492,19 @@ main {
   font-weight: 800;
 }
 
+.response-marker {
+  display: inline-block;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  padding: 2px 6px;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .overview-row.is-current {
   background: #eff6ff;
 }

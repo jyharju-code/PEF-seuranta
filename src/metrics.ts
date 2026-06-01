@@ -20,6 +20,24 @@ export type DiurnalVariationSummary = {
   maxPercent: number | null;
 };
 
+export type BronchodilatorResponse = {
+  percent: number | null;
+  delta: number | null;
+  meetsThreshold: boolean;
+};
+
+export type SessionBronchodilatorResponse = BronchodilatorResponse & {
+  date: string;
+  session: "morning" | "evening";
+};
+
+export type BronchodilatorResponseSummary = {
+  sessions: SessionBronchodilatorResponse[];
+  maxPercent: number | null;
+  maxDelta: number | null;
+  significantCount: number;
+};
+
 function toNumbers(values: string[]) {
   return values
     .map((value) => Number(value))
@@ -51,5 +69,44 @@ export function summarizeDiurnalVariation(entries: MetricEntry[]): DiurnalVariat
     daily,
     meanPercent: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null,
     maxPercent: values.length ? Math.max(...values) : null
+  };
+}
+
+export function bronchodilatorResponseForSession(session: MetricSession): BronchodilatorResponse {
+  const before = bestValue(session.before);
+  const after = bestValue(session.after ?? []);
+  if (before === null || after === null || before <= 0) {
+    return { percent: null, delta: null, meetsThreshold: false };
+  }
+
+  const delta = after - before;
+  const percent = (delta / before) * 100;
+  return {
+    percent,
+    delta,
+    meetsThreshold: percent >= 15 && delta >= 60
+  };
+}
+
+export function summarizeBronchodilatorResponses(
+  entries: MetricEntry[]
+): BronchodilatorResponseSummary {
+  const sessions = entries.flatMap((entry) =>
+    (["morning", "evening"] as const).map((session) => ({
+      date: entry.date,
+      session,
+      ...bronchodilatorResponseForSession(entry[session])
+    }))
+  );
+  const percents = sessions
+    .map((session) => session.percent)
+    .filter((value): value is number => value !== null);
+  const deltas = sessions.map((session) => session.delta).filter((value): value is number => value !== null);
+
+  return {
+    sessions,
+    maxPercent: percents.length ? Math.max(...percents) : null,
+    maxDelta: deltas.length ? Math.max(...deltas) : null,
+    significantCount: sessions.filter((session) => session.meetsThreshold).length
   };
 }
