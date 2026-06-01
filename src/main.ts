@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { createPefPdfBytes } from "./pdf-export";
 import "./styles.css";
 
 const BASE_URL = import.meta.env.BASE_URL;
@@ -643,57 +643,7 @@ async function exportPdf() {
   const template = await fetch(`${BASE_URL}templates/pef-template.pdf`).then((response) =>
     response.arrayBuffer()
   );
-  const source = await PDFDocument.load(template);
-  const pdf = await PDFDocument.create();
-  const [page] = await pdf.copyPages(source, [1]);
-  pdf.addPage(page);
-
-  const regular = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const { height } = page.getSize();
-  const topY = (top: number) => height - top;
-  const blue = rgb(0.05, 0.18, 0.38);
-
-  const patient = [state.settings.patientName, state.settings.patientId].filter(Boolean).join(", ");
-  drawText(page, patient, 455, topY(100), 9, regular, blue);
-  drawText(page, state.settings.year, 280, topY(96), 9, regular, blue);
-  if (state.settings.hospital) drawText(page, "X", 253, topY(88), 11, bold, blue);
-  drawText(page, "X", state.settings.weeks === 1 ? 146 : 193, topY(96), 11, bold, blue);
-
-  const xLeft = 117.5;
-  const pairWidth = 47.0;
-  const subWidth = pairWidth / 2;
-  const dateTop = 118.5;
-  const timeTop = 142.5;
-  const beforeTops = [154, 166, 178];
-  const afterTops = [190, 202, 214];
-  const symptomTimeTop = 226;
-  const symptomTops = [238, 250, 262];
-
-  state.entries.forEach((entry, dayIndex) => {
-    const dateX = xLeft + pairWidth * dayIndex + pairWidth / 2;
-    drawCentered(page, formatPdfDate(entry.date), dateX, topY(dateTop), 5.8, regular, blue);
-
-    (["morning", "evening"] as SessionKey[]).forEach((sessionKey, sessionIndex) => {
-      const session = entry[sessionKey];
-      const x = xLeft + pairWidth * dayIndex + subWidth * (sessionIndex + 0.5);
-      drawCentered(page, session.time, x, topY(timeTop), 6.2, regular, blue);
-      session.before.forEach((value, index) => {
-        drawCentered(page, value, x, topY(beforeTops[index]), 6.6, regular, blue);
-      });
-      session.after.forEach((value, index) => {
-        drawCentered(page, value, x, topY(afterTops[index]), 6.6, regular, blue);
-      });
-      drawCentered(page, session.afterTime, x, topY(symptomTimeTop), 6.2, regular, blue);
-      parseSymptomValues(session.symptoms).slice(0, 3).forEach((value, index) => {
-        drawCentered(page, String(value), x, topY(symptomTops[index]), 6.2, regular, blue);
-      });
-    });
-  });
-
-  drawGraph(page, topY, regular, blue);
-
-  const bytes = await pdf.save();
+  const bytes = await createPefPdfBytes(state, template);
   const pdfBuffer = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(pdfBuffer).set(bytes);
   downloadBlob(
@@ -702,117 +652,6 @@ async function exportPdf() {
   );
   saveState(copy().pdfReady);
   render();
-}
-
-function drawGraph(
-  page: import("pdf-lib").PDFPage,
-  topY: (top: number) => number,
-  font: import("pdf-lib").PDFFont,
-  color: ReturnType<typeof rgb>
-) {
-  const values = state.entries.flatMap((entry) =>
-    (["morning", "evening"] as SessionKey[]).flatMap((sessionKey) => {
-      const session = entry[sessionKey];
-      return [
-        bestValue(session.before),
-        bestValue(session.after),
-        ...parseSymptomValues(session.symptoms)
-      ].filter((value): value is number => value !== null);
-    })
-  );
-
-  if (!values.length) return;
-
-  const { minScale, maxScale } = chooseGraphScale(values);
-
-  const xLeft = 117.5;
-  const pairWidth = 47.0;
-  const subWidth = pairWidth / 2;
-  const graphTop = 268.2;
-  const graphBottom = 508.4;
-  const graphHeight = graphBottom - graphTop;
-  const yForValue = (value: number) => {
-    const clamped = Math.min(maxScale, Math.max(minScale, value));
-    const ratio = (clamped - minScale) / (maxScale - minScale);
-    return topY(graphBottom - ratio * graphHeight) - 2.5;
-  };
-
-  for (let value = minScale; value <= maxScale; value += 50) {
-    const y = yForValue(value);
-    drawRight(page, String(value), 108, y, 6.2, font, color);
-  }
-
-  state.entries.forEach((entry, dayIndex) => {
-    (["morning", "evening"] as SessionKey[]).forEach((sessionKey, sessionIndex) => {
-      const session = entry[sessionKey];
-      const x = xLeft + pairWidth * dayIndex + subWidth * (sessionIndex + 0.5);
-      const before = bestValue(session.before);
-      const after = bestValue(session.after);
-      if (before !== null) drawCentered(page, "X", x - 2.8, yForValue(before), 7.4, font, color);
-      if (after !== null) drawCentered(page, "O", x + 2.8, yForValue(after), 7.4, font, color);
-      parseSymptomValues(session.symptoms).forEach((value, symptomIndex) => {
-        drawTriangle(page, x + 5 + symptomIndex * 3, yForValue(value) + 1, color);
-      });
-    });
-  });
-}
-
-function chooseGraphScale(values: number[]) {
-  const minData = Math.min(...values);
-  const maxData = Math.max(...values);
-  let minScale = Math.max(0, Math.floor(minData / 100) * 100);
-  let maxScale = Math.ceil(maxData / 100) * 100;
-
-  if (maxScale === minScale) {
-    minScale = Math.max(0, minScale - 100);
-    maxScale = minScale + 200;
-  }
-
-  return { minScale, maxScale };
-}
-
-function drawText(
-  page: import("pdf-lib").PDFPage,
-  text: string,
-  x: number,
-  y: number,
-  size: number,
-  font: import("pdf-lib").PDFFont,
-  color: ReturnType<typeof rgb>
-) {
-  if (!text) return;
-  page.drawText(text, { x, y, size, font, color });
-}
-
-function drawCentered(
-  page: import("pdf-lib").PDFPage,
-  text: string,
-  x: number,
-  y: number,
-  size: number,
-  font: import("pdf-lib").PDFFont,
-  color: ReturnType<typeof rgb>
-) {
-  if (!text) return;
-  const width = font.widthOfTextAtSize(text, size);
-  drawText(page, text, x - width / 2, y, size, font, color);
-}
-
-function drawRight(
-  page: import("pdf-lib").PDFPage,
-  text: string,
-  rightX: number,
-  y: number,
-  size: number,
-  font: import("pdf-lib").PDFFont,
-  color: ReturnType<typeof rgb>
-) {
-  const width = font.widthOfTextAtSize(text, size);
-  drawText(page, text, rightX - width, y, size, font, color);
-}
-
-function drawTriangle(page: import("pdf-lib").PDFPage, x: number, y: number, color: ReturnType<typeof rgb>) {
-  page.drawSvgPath("M 0 0 L 0 6 L 7 3 Z", { x, y, color });
 }
 
 function parseSymptomValues(value: string) {
