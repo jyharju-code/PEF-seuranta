@@ -89,6 +89,63 @@ const COPY = {
     lead:
       "Puhelimessa toimiva PEF-seurannan apuri, joka tallentaa arvot tähän laitteeseen ja vie täytetyn PDF-taulukon terveydenhuollolle.",
     selectedMeasurement: "Valittu mittaus",
+    instructionsTitle: "Ohjeet",
+    instructionsLead:
+      "Tee puhallukset terveydenhuollosta saamasi ohjeen mukaan. Tämä ohje auttaa muistamaan tavallisen PEF-seurannan vaiheet.",
+    instructionsSections: [
+      {
+        title: "1. Ennen mittausta",
+        items: [
+          "Käytä samaa PEF-mittaria koko seurannan ajan.",
+          "Nollaa mittarin osoitin ennen jokaista puhallusta.",
+          "Puhalla aina samassa asennossa, istuen tai seisten.",
+          "Mittaa aamulla heti herättyäsi ja illalla suunnilleen samaan aikaan."
+        ]
+      },
+      {
+        title: "2. Puhallustekniikka",
+        items: [
+          "Pidä mittari vaakasuorassa.",
+          "Vedä keuhkot aivan täyteen ilmaa.",
+          "Aseta suukappale hampaiden väliin ja sulje huulet tiiviisti sen ympärille.",
+          "Puhalla yksi mahdollisimman voimakas ja lyhyt puhallus.",
+          "Kirjaa lukema. Tee yhteensä kolme puhallusta."
+        ]
+      },
+      {
+        title: "3. Ennen ja jälkeen avaavan lääkkeen",
+        items: [
+          "Kirjaa ensin kolme puhallusta kohtaan Ennen lääkettä.",
+          "Ota avaava lääke vain, jos sinulle on annettu siihen ohje.",
+          "Odota ohjeen mukainen aika, tavallisesti 15-30 minuuttia.",
+          "Puhalla uudelleen kolme kertaa ja kirjaa arvot kohtaan Lääkkeen jälkeen."
+        ]
+      },
+      {
+        title: "4. Laatu ja oireet",
+        items: [
+          "Kahden parhaan puhalluksen ero saa olla korkeintaan 20 l/min. Jos ero on suurempi, tee lisäpuhalluksia.",
+          "Jos sinulla tulee oireita, tee ylimääräiset oirepuhallukset ja kirjaa ne Oirepuhallukset-kohtaan.",
+          "Puhallus näyttää helposti liian pieneltä, jos et hengitä ensin aivan täyteen tai ilma karkaa suupielistä."
+        ]
+      },
+      {
+        title: "5. Lopuksi",
+        items: [
+          "Täytä koko 1 tai 2 viikon jakso saamasi ohjeen mukaan.",
+          "Vie lopuksi täytetty PDF ja toimita se terveydenhuollolle.",
+          "Jos hengitys vaikeutuu selvästi tai oireet ovat voimakkaat, noudata hoitosuunnitelmaasi tai ota yhteys terveydenhuoltoon."
+        ]
+      }
+    ],
+    sourcesTitle: "Lähteet",
+    sourcesIntro:
+      "Ohje perustuu HUS-lomakkeen puhallusohjeeseen ja yleisiin PEF-mittausohjeisiin.",
+    sourceLinks: [
+      ["Allergia-, iho- ja astmaliitto: PEF-seuranta", "https://allergia.fi/astma/astman-tutkiminen/pef-seuranta/"],
+      ["Terveyskirjasto: PEF", "https://www.terveyskirjasto.fi/snk03203"],
+      ["Asthma + Lung UK: Peak flow", "https://www.asthmaandlung.org.uk/symptoms-tests-treatments/tests/peak-flow"]
+    ],
     language: "Kieli",
     device: "Puhelin",
     iphone: "iPhone",
@@ -194,6 +251,63 @@ const COPY = {
     lead:
       "A phone-friendly PEF diary that stores values on this device and exports a filled PDF sheet for healthcare.",
     selectedMeasurement: "Selected measurement",
+    instructionsTitle: "Instructions",
+    instructionsLead:
+      "Follow the instructions you received from healthcare. These steps help you remember the usual PEF diary routine.",
+    instructionsSections: [
+      {
+        title: "1. Before measuring",
+        items: [
+          "Use the same peak-flow meter for the whole follow-up period.",
+          "Reset the meter pointer before every blow.",
+          "Always measure in the same position, sitting or standing.",
+          "Measure in the morning immediately after waking and in the evening at roughly the same time."
+        ]
+      },
+      {
+        title: "2. Blowing technique",
+        items: [
+          "Hold the meter horizontally.",
+          "Breathe in until your lungs are completely full.",
+          "Place the mouthpiece between your teeth and seal your lips tightly around it.",
+          "Blow once as hard and fast as you can with a short blow.",
+          "Enter the reading. Do three blows in total."
+        ]
+      },
+      {
+        title: "3. Before and after bronchodilator",
+        items: [
+          "First enter three blows under Before medication.",
+          "Take bronchodilator medication only if you have been instructed to do so.",
+          "Wait the instructed time, usually 15-30 minutes.",
+          "Blow three times again and enter the values under After medication."
+        ]
+      },
+      {
+        title: "4. Quality and symptoms",
+        items: [
+          "The two best blows should differ by no more than 20 l/min. If the difference is bigger, do extra blows.",
+          "If you have symptoms, do extra symptom blows and enter them under Symptom blows.",
+          "The value can be falsely low if you do not breathe in fully first or air leaks from the sides of your mouth."
+        ]
+      },
+      {
+        title: "5. At the end",
+        items: [
+          "Complete the full 1- or 2-week period according to your instructions.",
+          "Export the filled PDF and give it to healthcare.",
+          "If breathing becomes clearly difficult or symptoms are strong, follow your care plan or contact healthcare."
+        ]
+      }
+    ],
+    sourcesTitle: "Sources",
+    sourcesIntro:
+      "These instructions are based on the HUS form and general peak-flow measurement guidance.",
+    sourceLinks: [
+      ["Allergy, Skin and Asthma Federation: PEF follow-up", "https://allergia.fi/astma/astman-tutkiminen/pef-seuranta/"],
+      ["Terveyskirjasto: PEF", "https://www.terveyskirjasto.fi/snk03203"],
+      ["Asthma + Lung UK: Peak flow", "https://www.asthmaandlung.org.uk/symptoms-tests-treatments/tests/peak-flow"]
+    ],
     language: "Language",
     device: "Phone",
     iphone: "iPhone",
@@ -496,6 +610,8 @@ function render() {
         <a class="support-link" href="${SPONSOR_URL}" target="_blank" rel="noopener">${c.support}</a>
       </section>
 
+      ${instructionsPanel()}
+
       <section class="panel settings-panel" aria-label="Asetukset">
         <div class="section-heading">
           <h2>${c.tracking}</h2>
@@ -668,6 +784,46 @@ function render() {
     .querySelector<HTMLButtonElement>("[data-action='enable-notifications']")
     ?.addEventListener("click", enableNotifications);
   app.querySelector<HTMLButtonElement>("[data-action='install-pwa']")?.addEventListener("click", installPwa);
+}
+
+function instructionsPanel() {
+  const c = copy();
+  return `
+    <section class="panel instructions-panel" aria-label="${c.instructionsTitle}">
+      <div class="section-heading">
+        <div>
+          <h2>${c.instructionsTitle}</h2>
+          <p>${c.instructionsLead}</p>
+        </div>
+      </div>
+      <div class="instruction-grid">
+        ${c.instructionsSections
+          .map(
+            (section) => `
+              <article>
+                <h3>${section.title}</h3>
+                <ul>
+                  ${section.items.map((item) => `<li>${item}</li>`).join("")}
+                </ul>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+      <details class="source-details">
+        <summary>${c.sourcesTitle}</summary>
+        <p>${c.sourcesIntro}</p>
+        <ul>
+          ${c.sourceLinks
+            .map(
+              ([label, url]) =>
+                `<li><a href="${url}" target="_blank" rel="noopener">${label}</a></li>`
+            )
+            .join("")}
+        </ul>
+      </details>
+    </section>
+  `;
 }
 
 function field(label: string, path: string, value: string, type: string) {

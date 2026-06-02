@@ -274,6 +274,74 @@ main {
   margin-bottom: 14px;
 }
 
+.section-heading p {
+  max-width: 780px;
+  margin: 7px 0 0;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.instructions-panel {
+  background: #ffffff;
+}
+
+.instruction-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.instruction-grid article {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 12px;
+}
+
+.instruction-grid h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.instruction-grid ul,
+.source-details ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.instruction-grid li {
+  color: #334155;
+  line-height: 1.42;
+}
+
+.instruction-grid li + li {
+  margin-top: 5px;
+}
+
+.source-details {
+  margin-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
+}
+
+.source-details summary {
+  color: #1d4ed8;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.source-details p {
+  margin: 8px 0;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.source-details a {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
 .segmented {
   display: inline-grid;
   grid-auto-flow: column;
@@ -574,7 +642,8 @@ main {
   .intro-panel,
   .settings-grid,
   .measurement-grid,
-  .symptom-row {
+  .symptom-row,
+  .instruction-grid {
     grid-template-columns: 1fr;
   }
 

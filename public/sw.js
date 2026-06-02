@@ -1,4 +1,4 @@
-const CACHE_NAME = "pef-static-v5";
+const CACHE_NAME = "pef-static-v6";
 
 self.addEventListener("install", (event) => {
   const scope = self.registration.scope;
